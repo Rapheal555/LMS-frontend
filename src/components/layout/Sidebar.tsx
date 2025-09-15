@@ -30,6 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const adminNavItems = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/users', label: 'Users', icon: Users },
+    { href: '/students', label: 'Students', icon: UserCheck },
     { href: '/courses', label: 'Courses', icon: BookOpen },
     { href: '/ai-tools', label: 'AI Tools', icon: Brain },
     { href: '/notifications-demo', label: 'Notifications Demo', icon: Bell },

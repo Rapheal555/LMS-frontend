@@ -58,6 +58,10 @@ export const usersApi = {
   create: (data: Record<string, unknown>) => api.post('/users', data),
   update: (id: string, data: Record<string, unknown>) => api.patch(`/users/${id}`, data),
   delete: (id: string) => api.delete(`/users/${id}`),
+  getStudents: () => api.get('/users/students'),
+  getLecturers: () => api.get('/users/lecturers'),
+  activate: (id: string) => api.patch(`/users/${id}/activate`),
+  deactivate: (id: string) => api.patch(`/users/${id}/deactivate`),
 };
 
 // Courses API
