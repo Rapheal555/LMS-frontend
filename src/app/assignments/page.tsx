@@ -57,13 +57,31 @@ export default function AssignmentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch assignments from API
+  // Fetch assignments from API based on user role
   useEffect(() => {
     const fetchAssignments = async () => {
+      if (!user) return;
+      
       try {
         setIsLoading(true);
         setError(null);
-        const response = await assignmentsApi.getAll();
+        let response;
+        
+        // Call appropriate endpoint based on user role
+        switch (user.role) {
+          case 'admin':
+            response = await assignmentsApi.getAll();
+            break;
+          case 'lecturer':
+            response = await assignmentsApi.getByLecturer();
+            break;
+          case 'student':
+            response = await assignmentsApi.getMy();
+            break;
+          default:
+            throw new Error('Invalid user role');
+        }
+        
         setAssignments(response.data);
       } catch (err) {
         console.error('Error fetching assignments:', err);
@@ -74,7 +92,7 @@ export default function AssignmentsPage() {
     };
 
     fetchAssignments();
-  }, []);
+  }, [user]);
 
   // Filter assignments
   useEffect(() => {
