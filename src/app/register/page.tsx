@@ -20,7 +20,7 @@ const registerSchema = z
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string(),
     role: z.enum(['student', 'lecturer'], {
-      required_error: "Please select a role",
+      message: "Please select a role",
     }),
   })
   .refine((data) => data.password === data.confirmPassword, {
