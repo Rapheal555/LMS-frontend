@@ -514,7 +514,7 @@ export default function UsersPage() {
       >
         <div className="space-y-4">
           <p className="text-gray-600">
-            Are you sure you want to delete "{selectedUser?.name}"? This action
+            Are you sure you want to delete &apos;{selectedUser?.name}&apos;? This action
             cannot be undone.
           </p>
           <div className="flex justify-end gap-3">

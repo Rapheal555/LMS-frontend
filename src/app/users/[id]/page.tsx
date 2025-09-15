@@ -666,7 +666,7 @@ export default function UserDetailPage() {
       >
         <div className="space-y-4">
           <p className="text-gray-600">
-            Are you sure you want to delete "{userData.name}"? This action
+            Are you sure you want to delete &apos;{userData.name}&apos;? This action
             cannot be undone and will remove all associated data.
           </p>
           <div className="flex justify-end gap-3">

@@ -71,8 +71,8 @@ function AdminDashboard() {
         setStats({
           totalUsers: 1250, // This would come from a users API
           totalCourses: coursesResponse.data.length,
-          activeEnrollments: enrollmentsResponse.data.filter(e => e.status === 'ACTIVE').length,
-          pendingApprovals: enrollmentsResponse.data.filter(e => e.status === 'PENDING').length,
+          activeEnrollments: enrollmentsResponse.data.filter((e: { status: string; }) => e.status === 'ACTIVE').length,
+          pendingApprovals: enrollmentsResponse.data.filter((e: { status: string; }) => e.status === 'PENDING').length,
         });
 
         // Mock recent activities - in real app, this would come from an activity log API
@@ -239,18 +239,18 @@ function LecturerDashboard() {
           ]);
 
         const myCourses = coursesResponse.data;
-        const myAssignments = assignmentsResponse.data.filter(a => 
-          myCourses.some(c => c.id === a.courseId)
+        const myAssignments = assignmentsResponse.data.filter((a: { courseId: any; }) => 
+          myCourses.some((c: { id: any; }) => c.id === a.courseId)
         );
-        const myEnrollments = enrollmentsResponse.data.filter(e => 
-          myCourses.some(c => c.id === e.courseId)
+        const myEnrollments = enrollmentsResponse.data.filter((e: { courseId: any; }) => 
+          myCourses.some((c: { id: any; }) => c.id === e.courseId)
         );
 
         setStats({
           myCourses: myCourses.length,
           totalStudents: myEnrollments.length,
-          pendingAssignments: myAssignments.filter(a => a.status === 'PENDING').length,
-          upcomingDeadlines: myAssignments.filter(a => {
+          pendingAssignments: myAssignments.filter((a: { status: string; }) => a.status === 'PENDING').length,
+          upcomingDeadlines: myAssignments.filter((a: { dueDate: string | number | Date; }) => {
             const deadline = new Date(a.dueDate);
             const now = new Date();
             const diffTime = deadline.getTime() - now.getTime();
@@ -441,15 +441,15 @@ function StudentDashboard() {
          ]);
 
         const myEnrollments = enrollmentsResponse.data;
-        const myAssignments = assignmentsResponse.data.filter(a => 
-          myEnrollments.some(e => e.courseId === a.courseId)
+        const myAssignments = assignmentsResponse.data.filter((a: { courseId: any; }) => 
+          myEnrollments.some((e: { courseId: any; }) => e.courseId === a.courseId)
         );
 
         setStats({
           enrolledCourses: myEnrollments.length,
-          completedAssignments: myAssignments.filter(a => a.status === 'COMPLETED').length,
-          pendingAssignments: myAssignments.filter(a => a.status === 'PENDING').length,
-          upcomingDeadlines: myAssignments.filter(a => {
+          completedAssignments: myAssignments.filter((a: { status: string; }) => a.status === 'COMPLETED').length,
+          pendingAssignments: myAssignments.filter((a: { status: string; }) => a.status === 'PENDING').length,
+          upcomingDeadlines: myAssignments.filter((a: { dueDate: string | number | Date; }) => {
             const deadline = new Date(a.dueDate);
             const now = new Date();
             const diffTime = deadline.getTime() - now.getTime();
@@ -630,7 +630,7 @@ export default function DashboardPage() {
           Welcome back, {user?.firstName}!
         </h1>
         <p className="text-gray-600 mt-2">
-          Here's what's happening in your {user?.role?.toLowerCase()} dashboard.
+          Here&apos;s what&apos;s happening in your {user?.role?.toLowerCase()} dashboard.
         </p>
       </div>
 
