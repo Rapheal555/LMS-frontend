@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { coursesApi, enrollmentsApi, assignmentsApi } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -26,18 +27,41 @@ interface Course {
   id: string;
   title: string;
   description: string;
-  instructor: string;
-  instructorId: string;
-  enrolledStudents: number;
+  courseCode: string;
+  credits: number;
+  semester: string;
+  year: number;
   maxStudents: number;
-  duration: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
-  category: string;
-  status: 'Active' | 'Draft' | 'Archived';
-  prerequisites?: string;
-  learningObjectives: string;
+  syllabus?: string;
+  syllabusUrl?: string;
+  syllabusFileName?: string;
+  isActive: boolean;
+  status: string;
   createdAt: string;
   updatedAt: string;
+  lecturer: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  enrollments: Array<{
+    id: string;
+    status: string;
+    student: {
+      id: string;
+      firstName: string;
+      lastName: string;
+    };
+  }>;
+  assignments: Array<{
+    id: string;
+    title: string;
+    description: string;
+    dueDate: string;
+    maxPoints: number;
+    status: string;
+  }>;
 }
 
 interface Assignment {
@@ -46,55 +70,6 @@ interface Assignment {
   dueDate: string;
   status: 'upcoming' | 'active' | 'overdue' | 'completed';
 }
-
-// Mock data
-const mockCourse: Course = {
-  id: '1',
-  title: 'Introduction to Computer Science',
-  description: 'Learn the fundamentals of computer science including algorithms, data structures, and programming concepts. This comprehensive course covers essential topics that form the foundation of computer science education.',
-  instructor: 'Dr. Sarah Johnson',
-  instructorId: 'instructor-1',
-  enrolledStudents: 45,
-  maxStudents: 50,
-  duration: '12 weeks',
-  level: 'Beginner',
-  category: 'Computer Science',
-  status: 'Active',
-  prerequisites: 'Basic mathematics knowledge and logical thinking skills',
-  learningObjectives: `By the end of this beginner level course on Introduction to Computer Science, students will be able to:
-
-• Understand the fundamental concepts and principles of computer science
-• Apply theoretical knowledge to practical, real-world scenarios
-• Demonstrate proficiency in basic programming concepts
-• Analyze and solve simple algorithmic problems
-• Collaborate effectively on team-based programming projects
-• Present findings and solutions in a clear, professional manner
-
-This 12 weeks course is designed to provide comprehensive coverage of essential topics while encouraging critical thinking and hands-on learning experiences.`,
-  createdAt: '2024-01-15',
-  updatedAt: '2024-01-20'
-};
-
-const mockAssignments: Assignment[] = [
-  {
-    id: '1',
-    title: 'Basic Algorithm Implementation',
-    dueDate: '2024-03-15',
-    status: 'active'
-  },
-  {
-    id: '2',
-    title: 'Data Structures Quiz',
-    dueDate: '2024-03-22',
-    status: 'upcoming'
-  },
-  {
-    id: '3',
-    title: 'Final Project Proposal',
-    dueDate: '2024-04-01',
-    status: 'upcoming'
-  }
-];
 
 export default function CourseDetailPage() {
   const params = useParams();
@@ -108,17 +83,31 @@ export default function CourseDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
-    // Simulate API call
     const fetchCourse = async () => {
       setIsLoading(true);
       try {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setCourse(mockCourse);
-        setAssignments(mockAssignments);
-        // Simulate enrollment check
-        setIsEnrolled(user?.role === 'student' && Math.random() > 0.5);
+        const [courseResponse, ] = await Promise.all([
+          coursesApi.getById(params.id as string), 
+          // assignmentsApi.getMy() // We'll filter by course on backend or here
+        ]);
+        
+        setCourse(courseResponse.data);
+        // Filter assignments for this course
+        // const courseAssignments = assignmentsResponse.data.filter(
+        //   (assignment: any) => assignment.courseId === params.id
+        // );
+        // setAssignments(courseAssignments);
+        
+        // Check if user is enrolled
+        if (user?.role === 'student' && courseResponse.data.enrollments) {
+          const enrollment = courseResponse.data.enrollments.find(
+            (enrollment: any) => enrollment.student.id === user.id
+          );
+          setIsEnrolled(!!enrollment);
+        }
       } catch (error) {
         console.error('Error fetching course:', error);
+        setCourse(null);
       } finally {
         setIsLoading(false);
       }
@@ -128,35 +117,51 @@ export default function CourseDetailPage() {
   }, [params.id, user]);
 
   const handleEnroll = async () => {
+    if (!course) return;
+    
     setActionLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await enrollmentsApi.create(course.id);
       setIsEnrolled(true);
-      setCourse(prev => prev ? { ...prev, enrolledStudents: prev.enrolledStudents + 1 } : null);
+      // Refresh course data to get updated enrollment count
+      const courseResponse = await coursesApi.getById(params.id as string);
+      setCourse(courseResponse.data);
     } catch (error) {
-      console.error('Error enrolling:', error);
+      console.error('Error enrolling in course:', error);
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleUnenroll = async () => {
+    if (!course || !user) return;
+    
     setActionLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setIsEnrolled(false);
-      setCourse(prev => prev ? { ...prev, enrolledStudents: prev.enrolledStudents - 1 } : null);
+      // Find the enrollment to delete
+      const enrollment = course.enrollments.find(
+        (enrollment: any) => enrollment.student.id === user.id
+      );
+      if (enrollment) {
+        await enrollmentsApi.delete(enrollment.id);
+        setIsEnrolled(false);
+        // Refresh course data to get updated enrollment count
+        const courseResponse = await coursesApi.getById(params.id as string);
+        setCourse(courseResponse.data);
+      }
     } catch (error) {
-      console.error('Error unenrolling:', error);
+      console.error('Error unenrolling from course:', error);
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleDeleteCourse = async () => {
+    if (!course) return;
+    
     setActionLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await coursesApi.delete(course.id);
       router.push('/courses');
     } catch (error) {
       console.error('Error deleting course:', error);
@@ -194,8 +199,8 @@ export default function CourseDetailPage() {
     }
   };
 
-  const canEdit = user?.role === 'admin' || (user?.role === 'lecturer' && course?.instructorId === user.id);
-  const canEnroll = user?.role === 'student' && course?.status === 'Active' && course.enrolledStudents < course.maxStudents;
+  const canEdit = user?.role === 'admin' || (user?.role === 'lecturer' && course?.lecturer?.id === user.id);
+  const canEnroll = user?.role === "student" && course?.status === "active" && course?.enrollments?.length < course?.maxStudents;
 
   if (isLoading) {
     return (
@@ -240,8 +245,8 @@ export default function CourseDetailPage() {
                 <h1 className="text-3xl font-bold text-gray-900">
                   {course.title}
                 </h1>
-                <Badge variant={getLevelColor(course.level) as any}>
-                  {course.level}
+                <Badge variant="secondary">
+                  {course.courseCode}
                 </Badge>
                 {(user?.role === "admin" || user?.role === "lecturer") && (
                   <Badge variant={getStatusColor(course.status) as any}>
@@ -254,19 +259,19 @@ export default function CourseDetailPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div className="flex items-center text-gray-600">
                   <User className="h-4 w-4 mr-2" />
-                  {course.instructor}
+                  {course.lecturer.firstName} {course.lecturer.lastName}
                 </div>
                 <div className="flex items-center text-gray-600">
                   <Users className="h-4 w-4 mr-2" />
-                  {course.enrolledStudents}/{course.maxStudents} students
-                </div>
-                <div className="flex items-center text-gray-600">
-                  <Clock className="h-4 w-4 mr-2" />
-                  {course.duration}
+                  {course.enrollments.length}/{course.maxStudents} students
                 </div>
                 <div className="flex items-center text-gray-600">
                   <BookOpen className="h-4 w-4 mr-2" />
-                  {course.category}
+                  {course.credits} Credits
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {course.semester} {course.year}
                 </div>
               </div>
             </div>
@@ -310,7 +315,7 @@ export default function CourseDetailPage() {
                   )}
                   {!canEnroll && !isEnrolled && (
                     <Button disabled>
-                      {course.enrolledStudents >= course.maxStudents
+                      {course.enrollments.length >= course.maxStudents
                         ? "Course Full"
                         : "Enrollment Closed"}
                     </Button>
@@ -325,29 +330,31 @@ export default function CourseDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Learning Objectives */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Target className="h-5 w-5 mr-2" />
-                Learning Objectives
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="whitespace-pre-line text-gray-700">
-                {course.learningObjectives}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Prerequisites */}
-          {course.prerequisites && (
+          {/* Course Syllabus */}
+          {course.syllabus && (
             <Card>
               <CardHeader>
-                <CardTitle>Prerequisites</CardTitle>
+                <CardTitle className="flex items-center">
+                  <BookOpen className="h-5 w-5 mr-2" />
+                  Course Syllabus
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-700">{course.prerequisites}</p>
+                <div className="whitespace-pre-line text-gray-700">
+                  {course.syllabus}
+                </div>
+                {course.syllabusUrl && (
+                  <div className="mt-4">
+                    <a
+                      href={course.syllabusUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Download Syllabus ({course.syllabusFileName})
+                    </a>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -433,14 +440,14 @@ export default function CourseDetailPage() {
                 </span>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">
-                    {course.enrolledStudents} / {course.maxStudents}
+                    {course.enrollments.length} / {course.maxStudents}
                   </span>
                   <div className="w-20 bg-gray-200 rounded-full h-2">
                     <div
                       className="bg-blue-600 h-2 rounded-full"
                       style={{
                         width: `${
-                          (course.enrolledStudents / course.maxStudents) * 100
+                          (course.enrollments.length / course.maxStudents) * 100
                         }%`,
                       }}
                     ></div>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { coursesApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -13,65 +14,45 @@ import { Select } from '@/components/ui/Select';
 import { ArrowLeft, Save, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
-const statusTypes = ['Draft', 'Active'] as const;
-const levelTypes = ['Beginner', 'Intermediate', 'Advanced'] as const;
-
+// Form validation schema matching backend CreateCourseDto
 const courseSchema = z.object({
-  title: z
-    .string()
-    .min(1, "Course title is required")
-    .max(100, "Title must be less than 100 characters"),
-  description: z
-    .string()
-    .min(10, "Description must be at least 10 characters")
-    .max(500, "Description must be less than 500 characters"),
-  category: z.string().min(1, "Category is required"),
-  level: z.enum(levelTypes, {
-    message: "Level is required",
-  }),
-  duration: z.string().min(1, "Duration is required"),
-  maxStudents: z
-    .number()
-    .min(1, "Maximum students must be at least 1")
-    .max(200, "Maximum students cannot exceed 200"),
-  prerequisites: z.string().optional(),
-  learningObjectives: z
-    .string()
-    .min(10, "Learning objectives must be at least 10 characters"),
-  status: z.enum(statusTypes, {
-    message: "Status is required",
-  }),
+  title: z.string().min(1, 'Title is required').max(200, 'Title must be less than 200 characters'),
+  description: z.string().min(1, 'Description is required').max(1000, 'Description must be less than 1000 characters'),
+  credits: z.number().min(1, 'Credits must be at least 1').max(6, 'Credits cannot exceed 6'),
+  maxStudents: z.number().min(1, 'Must have at least 1 student').max(200, 'Cannot exceed 200 students'),
+  courseCode: z.string().min(1, 'Course code is required').max(20, 'Course code must be less than 20 characters'),
+  semester: z.string().min(1, 'Semester is required').max(20, 'Semester must be less than 20 characters'),
+  year: z.number().min(2020, 'Year must be at least 2020').max(2030, 'Year cannot exceed 2030'),
+  prerequisites: z.string().max(500, 'Prerequisites must be less than 500 characters').optional()
 });
 
 type CourseFormData = z.infer<typeof courseSchema>;
 
-const categories = [
-  'Computer Science',
-  'Web Development',
-  'Mobile Development',
-  'Data Science',
-  'Machine Learning',
-  'Cybersecurity',
-  'Database Management',
-  'Software Engineering',
-  'UI/UX Design',
-  'Project Management'
+// Options for credits
+const creditsOptions = [
+  { value: '1', label: '1 Credit' },
+  { value: '2', label: '2 Credits' },
+  { value: '3', label: '3 Credits' },
+  { value: '4', label: '4 Credits' },
+  { value: '5', label: '5 Credits' },
+  { value: '6', label: '6 Credits' }
 ];
 
-const categoriesOptions = categories.map(category => ({
-  value: category,
-  label: category
-}));
-
-const levelOptions = [
-  { value: 'Beginner', label: 'Beginner' },
-  { value: 'Intermediate', label: 'Intermediate' },
-  { value: 'Advanced', label: 'Advanced' }
+// Options for semester
+const semesterOptions = [
+  { value: 'Fall', label: 'Fall' },
+  { value: 'Spring', label: 'Spring' },
+  { value: 'Summer', label: 'Summer' },
+  { value: 'Winter', label: 'Winter' }
 ];
 
-const statusOptions = [
-  { value: 'Draft', label: 'Draft - Save for later editing' },
-  { value: 'Active', label: 'Active - Publish immediately' }
+// Options for year
+const yearOptions = [
+  { value: '2024', label: '2024' },
+  { value: '2025', label: '2025' },
+  { value: '2026', label: '2026' },
+  { value: '2027', label: '2027' },
+  { value: '2028', label: '2028' }
 ];
 
 export default function CreateCoursePage() {
@@ -90,8 +71,9 @@ export default function CreateCoursePage() {
   } = useForm<CourseFormData>({
     resolver: zodResolver(courseSchema),
     defaultValues: {
-      status: 'Draft',
-      maxStudents: 30
+      credits: 3,
+      maxStudents: 30,
+      year: new Date().getFullYear()
     }
   });
 
@@ -104,12 +86,11 @@ export default function CreateCoursePage() {
   const onSubmit = async (data: CourseFormData) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Create course via API
+      const response = await coursesApi.create(data);
+      console.log('Course created successfully:', response.data);
       
-      console.log('Course created:', data);
-      
-      // Redirect to courses page
+      // Redirect to courses page on success
       router.push('/courses');
     } catch (error) {
       console.error('Error creating course:', error);
@@ -118,39 +99,7 @@ export default function CreateCoursePage() {
     }
   };
 
-  const generateSyllabus = async () => {
-    const title = watch('title');
-    const level = watch('level');
-    const duration = watch('duration');
-    
-    if (!title || !level || !duration) {
-      alert('Please fill in the course title, level, and duration first.');
-      return;
-    }
 
-    setIsGeneratingSyllabus(true);
-    try {
-      // Simulate AI syllabus generation
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const generatedObjectives = `By the end of this ${level.toLowerCase()} level course on ${title}, students will be able to:
-
-• Understand the fundamental concepts and principles of ${title.toLowerCase()}
-• Apply theoretical knowledge to practical, real-world scenarios
-• Demonstrate proficiency in key skills and techniques
-• Analyze and solve complex problems within the subject domain
-• Collaborate effectively on team-based projects
-• Present findings and solutions in a clear, professional manner
-
-This ${duration} course is designed to provide comprehensive coverage of essential topics while encouraging critical thinking and hands-on learning experiences.`;
-      
-      setValue('learningObjectives', generatedObjectives);
-    } catch (error) {
-      console.error('Error generating syllabus:', error);
-    } finally {
-      setIsGeneratingSyllabus(false);
-    }
-  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -192,11 +141,11 @@ This ${duration} course is designed to provide comprehensive coverage of essenti
                 />
               </div>
               <div>
-                <Select
-                  label="Category"
-                  options={categoriesOptions}
-                  error={errors.category?.message}
-                  {...register("category")}
+                <Input
+                  label="Course Code"
+                  placeholder="e.g., CS101"
+                  error={errors.courseCode?.message}
+                  {...register("courseCode")}
                 />
               </div>
             </div>
@@ -218,22 +167,13 @@ This ${duration} course is designed to provide comprehensive coverage of essenti
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Select
-                  label="Level"
-                  options={levelOptions}
-                  error={errors.level?.message}
-                  {...register("level")}
-                />
-                  
-              </div>
-              <div>
-                <Input
-                  label="Duration"
-                  placeholder="e.g., 12 weeks"
-                  error={errors.duration?.message}
-                  {...register("duration")}
+                  label="Credits"
+                  options={creditsOptions}
+                  error={errors.credits?.message}
+                  {...register("credits", { valueAsNumber: true })}
                 />
               </div>
               <div>
@@ -247,48 +187,37 @@ This ${duration} course is designed to provide comprehensive coverage of essenti
                 />
               </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Select
+                  label="Semester"
+                  options={semesterOptions}
+                  error={errors.semester?.message}
+                  {...register("semester")}
+                />
+              </div>
+              <div>
+                <Select
+                  label="Year"
+                  options={yearOptions}
+                  error={errors.year?.message}
+                  {...register("year", { valueAsNumber: true })}
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         {/* Course Content */}
         <Card>
           <CardHeader>
-            <div className="flex justify-between items-center">
-              <div>
-                <CardTitle>Course Content</CardTitle>
-                <CardDescription>
-                  Define the learning objectives and prerequisites
-                </CardDescription>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={generateSyllabus}
-                disabled={isGeneratingSyllabus}
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                {isGeneratingSyllabus ? "Generating..." : "AI Generate"}
-              </Button>
-            </div>
+            <CardTitle>Course Content</CardTitle>
+            <CardDescription>
+              Define the prerequisites for this course
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Learning Objectives
-              </label>
-              <textarea
-                className="w-full placeholder:text-gray-400 text-gray-700 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                rows={8}
-                placeholder="Describe what students will learn and be able to do after completing this course..."
-                {...register("learningObjectives")}
-              />
-              {errors.learningObjectives && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.learningObjectives.message}
-                </p>
-              )}
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Prerequisites (Optional)
@@ -299,28 +228,16 @@ This ${duration} course is designed to provide comprehensive coverage of essenti
                 placeholder="List any prerequisites or recommended background knowledge..."
                 {...register("prerequisites")}
               />
+              {errors.prerequisites && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.prerequisites.message}
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Publication Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Publication Settings</CardTitle>
-            <CardDescription>Choose how to publish your course</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div>
-              <Select
-                label="Status"
-                options={statusOptions} 
-                error={errors.status?.message}
-                {...register("status")}
-              />
-                
-            </div>
-          </CardContent>
-        </Card>
+
 
         {/* Actions */}
         <div className="flex justify-end gap-4">
