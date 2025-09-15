@@ -247,13 +247,27 @@ export default function AssignmentDetailPage() {
     );
   }
 
+  const submissions = assignment?.submissions ?? [];
+  const submittedCount = submissions.filter(
+    (s) => s.status === 'submitted' || s.status === 'graded'
+  ).length;
+  const gradedCount = submissions.filter((s) => s.status === 'graded').length;
+  const lateCount = submissions.filter((s) => s.status === 'late').length;
+  const gradedSubmissions = submissions.filter(
+    (s): s is Submission & { grade: number } => typeof s.grade === 'number'
+  );
+  const averageGrade =
+    gradedSubmissions.length > 0
+      ? gradedSubmissions.reduce((acc, s) => acc + s.grade, 0) /
+        gradedSubmissions.length
+      : 0;
+
   const submissionStats = {
-    total: assignment.submissions?.length || 0,
-    submitted: assignment.submissions?.filter(s => s.status === 'submitted' || s.status === 'graded').length || 0,
-    graded: assignment.submissions?.filter(s => s.status === 'graded').length || 0,
-    late: assignment.submissions?.filter(s => s.status === 'late').length || 0,
-    averageGrade: assignment?.submissions?.filter(s => s.grade !== undefined)
-      .reduce((acc, s) => acc + (s.grade || 0), 0) / (assignment?.submissions?.filter(s => s.grade !== undefined).length || 1) || 0
+    total: submissions.length || 0,
+    submitted: submittedCount || 0,
+    graded: gradedCount || 0,
+    late: lateCount || 0,
+    averageGrade: averageGrade || 0,
   };
 
   return (
