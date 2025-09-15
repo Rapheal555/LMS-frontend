@@ -35,10 +35,10 @@ const createUserSchema = z
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string(),
     role: z.enum(["admin", "lecturer", "student"], {
-      required_error: "Please select a role",
+      message: "Please select a role",
     }),
     status: z.enum(["active", "inactive"], {
-      required_error: "Please select a status",
+      message: "Please select a status",
     }),
     department: z.string().optional(),
     studentId: z.string().optional(),

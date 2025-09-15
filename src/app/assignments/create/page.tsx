@@ -30,14 +30,14 @@ interface Course {
   code: string;
 }
 
-
+const assignmentTypes = ['homework', 'project', 'quiz', 'exam', 'lab'] as const;
 
 const createAssignmentSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   courseId: z.string().min(1, 'Please select a course'),
-  type: z.enum(['homework', 'project', 'quiz', 'exam', 'lab'], {
-    required_error: 'Please select an assignment type'
+  type: z.enum(assignmentTypes, {
+    message: 'Please select an assignment type'
   }),
   totalPoints: z.number().min(1, 'Total points must be at least 1').max(1000, 'Total points cannot exceed 1000'),
   dueDate: z.string().min(1, 'Due date is required'),

@@ -13,20 +13,34 @@ import { Select } from '@/components/ui/Select';
 import { ArrowLeft, Save, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
+const statusTypes = ['Draft', 'Active'] as const;
+const levelTypes = ['Beginner', 'Intermediate', 'Advanced'] as const;
+
 const courseSchema = z.object({
-  title: z.string().min(1, 'Course title is required').max(100, 'Title must be less than 100 characters'),
-  description: z.string().min(10, 'Description must be at least 10 characters').max(500, 'Description must be less than 500 characters'),
-  category: z.string().min(1, 'Category is required'),
-  level: z.enum(['Beginner', 'Intermediate', 'Advanced'], {
-    required_error: 'Level is required'
+  title: z
+    .string()
+    .min(1, "Course title is required")
+    .max(100, "Title must be less than 100 characters"),
+  description: z
+    .string()
+    .min(10, "Description must be at least 10 characters")
+    .max(500, "Description must be less than 500 characters"),
+  category: z.string().min(1, "Category is required"),
+  level: z.enum(levelTypes, {
+    message: "Level is required",
   }),
-  duration: z.string().min(1, 'Duration is required'),
-  maxStudents: z.number().min(1, 'Maximum students must be at least 1').max(200, 'Maximum students cannot exceed 200'),
+  duration: z.string().min(1, "Duration is required"),
+  maxStudents: z
+    .number()
+    .min(1, "Maximum students must be at least 1")
+    .max(200, "Maximum students cannot exceed 200"),
   prerequisites: z.string().optional(),
-  learningObjectives: z.string().min(10, 'Learning objectives must be at least 10 characters'),
-  status: z.enum(['Draft', 'Active'], {
-    required_error: 'Status is required'
-  })
+  learningObjectives: z
+    .string()
+    .min(10, "Learning objectives must be at least 10 characters"),
+  status: z.enum(statusTypes, {
+    message: "Status is required",
+  }),
 });
 
 type CourseFormData = z.infer<typeof courseSchema>;
