@@ -52,6 +52,7 @@ export default function CoursesPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activatingCourse, setActivatingCourse] = useState<string | null>(null);
 
   // Fetch courses on component mount
   useEffect(() => {
@@ -105,6 +106,22 @@ export default function CoursesPage() {
 
     setFilteredCourses(filtered);
   }, [courses, searchTerm, statusFilter]);
+
+  const handleActivateCourse = async (courseId: string) => {
+    setActivatingCourse(courseId);
+    try {
+      await coursesApi.activate(courseId);
+      // Refresh courses list
+      const response = await coursesApi.getAll();
+      setCourses(response.data);
+      setFilteredCourses(response.data);
+    } catch (error) {
+      console.error('Error activating course:', error);
+      setError('Failed to activate course. Please try again.');
+    } finally {
+      setActivatingCourse(null);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -240,12 +257,23 @@ export default function CoursesPage() {
                   <Clock className="h-4 w-4 mr-2" />
                   {course.credits} credits • {course.semester} {course.year}
                 </div>
-                <div className="pt-2">
+                <div className="pt-2 space-y-2">
                   <Link href={`/courses/${course.id}`}>
                     <Button className="w-full" variant="outline">
                       View Details
                     </Button>
                   </Link>
+                  {user?.role === "admin" && course.status === "draft" && (
+                    <Button
+                      className="w-full"
+                      variant="default"
+                      size="sm"
+                      onClick={() => handleActivateCourse(course.id)}
+                      disabled={activatingCourse === course.id}
+                    >
+                      {activatingCourse === course.id ? "Activating..." : "Activate Course"}
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>

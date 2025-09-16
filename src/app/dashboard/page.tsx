@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { coursesApi, enrollmentsApi, assignmentsApi, aiApi } from '@/lib/api';
+import { coursesApi, enrollmentsApi, assignmentsApi, aiApi, usersApi } from '@/lib/api';
 import {
   BookOpen,
   Users,
@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Plus,
 } from 'lucide-react';
+import Link from 'next/link';
 
 interface DashboardStats {
   admin: {
@@ -63,13 +64,14 @@ function AdminDashboard() {
     const fetchAdminData = async () => {
       try {
         setError(null);
-        const [coursesResponse, enrollmentsResponse] = await Promise.all([
+        const [coursesResponse, enrollmentsResponse, usersResponse] = await Promise.all([
            coursesApi.getAll(),
            enrollmentsApi.getAll(),
+           usersApi.getAll(),
          ]);
 
         setStats({
-          totalUsers: 1250, // This would come from a users API
+          totalUsers: usersResponse.data.length,
           totalCourses: coursesResponse.data.length,
           activeEnrollments: enrollmentsResponse.data.filter((e: { status: string; }) => e.status === 'ACTIVE').length,
           pendingApprovals: enrollmentsResponse.data.filter((e: { status: string; }) => e.status === 'PENDING').length,
@@ -329,62 +331,76 @@ function LecturerDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">My Courses</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">
+              My Courses
+            </CardTitle>
             <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
               <BookOpen className="h-4 w-4 text-blue-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.myCourses}</div>
-            <Button variant="link" className="p-0 h-auto text-xs">
+            <div className="text-2xl font-bold text-gray-900">
+              {stats.myCourses}
+            </div>
+            <Link
+              href={"/courses/create"}
+              passHref
+              className="p-0 text-blue-600 hover:underline flex h-auto text-xs"
+            >
               <Plus className="h-3 w-3 mr-1" />
               Create new course
-            </Button>
+            </Link>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Students</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Total Students
+            </CardTitle>
             <div className="h-8 w-8 bg-green-100 rounded-lg flex items-center justify-center">
               <Users className="h-4 w-4 text-green-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.totalStudents}</div>
-            <p className="text-xs text-gray-500">
-              Across all courses
-            </p>
+            <div className="text-2xl font-bold text-gray-900">
+              {stats.totalStudents}
+            </div>
+            <p className="text-xs text-gray-500">Across all courses</p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Pending Assignments</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Pending Assignments
+            </CardTitle>
             <div className="h-8 w-8 bg-purple-100 rounded-lg flex items-center justify-center">
               <FileText className="h-4 w-4 text-purple-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.pendingAssignments}</div>
-            <p className="text-xs text-gray-500">
-              Need grading
-            </p>
+            <div className="text-2xl font-bold text-gray-900">
+              {stats.pendingAssignments}
+            </div>
+            <p className="text-xs text-gray-500">Need grading</p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Upcoming Deadlines</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Upcoming Deadlines
+            </CardTitle>
             <div className="h-8 w-8 bg-orange-100 rounded-lg flex items-center justify-center">
               <Clock className="h-4 w-4 text-orange-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.upcomingDeadlines}</div>
-            <p className="text-xs text-gray-500">
-              Next 7 days
-            </p>
+            <div className="text-2xl font-bold text-gray-900">
+              {stats.upcomingDeadlines}
+            </div>
+            <p className="text-xs text-gray-500">Next 7 days</p>
           </CardContent>
         </Card>
       </div>
@@ -401,15 +417,22 @@ function LecturerDashboard() {
         <CardContent>
           <div className="space-y-3">
             {activities.map((activity) => (
-              <div key={activity.id} className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+              <div
+                key={activity.id}
+                className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+              >
                 <div className="w-3 h-3 bg-green-600 rounded-full" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{activity.action}</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {activity.action}
+                  </p>
                   <p className="text-xs text-gray-500 truncate">
                     {activity.student} - {activity.course}
                   </p>
                 </div>
-                <div className="text-xs text-gray-500 shrink-0">{activity.time}</div>
+                <div className="text-xs text-gray-500 shrink-0">
+                  {activity.time}
+                </div>
               </div>
             ))}
           </div>
@@ -518,9 +541,9 @@ function StudentDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{stats.enrolledCourses}</div>
-            <Button variant="link" className="p-0 h-auto text-xs">
+            <Link href={'/courses'} className="p-0 text-blue-500 hover:underline h-auto text-xs">
               Browse more courses
-            </Button>
+            </Link>
           </CardContent>
         </Card>
 

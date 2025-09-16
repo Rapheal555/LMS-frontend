@@ -78,6 +78,7 @@ export const coursesApi = {
     }),
   updateStatus: (id: string, status: string) =>
     api.patch(`/courses/${id}/status`, { status }),
+  activate: (id: string) => api.patch(`/courses/${id}/activate`),
   delete: (id: string) => api.delete(`/courses/${id}`),
   search: (query: string) => api.get(`/courses/search?q=${query}`),
 };

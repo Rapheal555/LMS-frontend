@@ -32,7 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
     { href: '/users', label: 'Users', icon: Users },
     { href: '/students', label: 'Students', icon: UserCheck },
     { href: '/courses', label: 'Courses', icon: BookOpen },
-    { href: '/ai-tools', label: 'AI Tools', icon: Brain },
+    // { href: '/ai-tools', label: 'AI Tools', icon: Brain },
     { href: '/notifications-demo', label: 'Notifications Demo', icon: Bell },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
@@ -42,14 +42,14 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
     { href: '/courses', label: 'My Courses', icon: BookOpen },
     { href: '/assignments', label: 'Assignments', icon: FileText },
     { href: '/students', label: 'Students', icon: UserCheck },
-    { href: '/ai-tools', label: 'AI Tools', icon: Brain },
+    // { href: '/ai-tools', label: 'AI Tools', icon: Brain },
   ];
 
   const studentNavItems = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/courses', label: 'Courses', icon: GraduationCap },
     { href: '/assignments', label: 'Assignments', icon: FileText },
-    { href: '/ai-recommendations', label: 'AI Recommendations', icon: Brain },
+    // { href: '/ai-recommendations', label: 'AI Recommendations', icon: Brain },
   ];
 
   const getNavItems = () => {
